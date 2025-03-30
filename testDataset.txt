@@ -1,0 +1,269 @@
+{
+    "credit_score": 780,
+    "annual_income": 95000,
+    "self_reported_debt": 2000,
+    "self_reported_expenses": 2500,
+    "requested_amount": 20000,
+    "age": 42,
+    "province": 1,
+    "employment_status": 1,
+    "months_employed": 48,
+    "total_credit_limit": 40000,
+    "credit_utilization": 20,
+    "num_open_accounts": 3,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $20000, 5.75%
+
+{
+    "credit_score": 670,
+    "annual_income": 70000,
+    "self_reported_debt": 3000,
+    "self_reported_expenses": 2000,
+    "requested_amount": 15000,
+    "age": 35,
+    "province": 2,
+    "employment_status": 1,
+    "months_employed": 36,
+    "total_credit_limit": 25000,
+    "credit_utilization": 40,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $15000, 7.75%
+
+{
+    "credit_score": 450,
+    "annual_income": 40000,
+    "self_reported_debt": 1500,
+    "self_reported_expenses": 1000,
+    "requested_amount": 5000,
+    "age": 27,
+    "province": 3,
+    "employment_status": 1,
+    "months_employed": 18,
+    "total_credit_limit": 8000,
+    "credit_utilization": 30,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 2,
+    "payment_history": 3
+}
+Actual: Denied, $0, 0.0%
+
+{
+    "credit_score": 710,
+    "annual_income": 85000,
+    "self_reported_debt": 2500,
+    "self_reported_expenses": 3000,
+    "requested_amount": 18000,
+    "age": 40,
+    "province": 4,
+    "employment_status": 1,
+    "months_employed": 60,
+    "total_credit_limit": 30000,
+    "credit_utilization": 60,
+    "num_open_accounts": 4,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $16500, 7.75%
+
+{
+    "credit_score": 620,
+    "annual_income": 60000,
+    "self_reported_debt": 1000,
+    "self_reported_expenses": 2000,
+    "requested_amount": 10000,
+    "age": 31,
+    "province": 1,
+    "employment_status": 1,
+    "months_employed": 24,
+    "total_credit_limit": 15000,
+    "credit_utilization": 25,
+    "num_open_accounts": 3,
+    "num_credit_inquiries": 0,
+    "payment_history": 3
+}
+Actual: Approved, $10000, 7.75%
+
+{
+    "credit_score": 800,
+    "annual_income": 120000,
+    "self_reported_debt": 1500,
+    "self_reported_expenses": 3500,
+    "requested_amount": 25000,
+    "age": 50,
+    "province": 2,
+    "employment_status": 1,
+    "months_employed": 72,
+    "total_credit_limit": 50000,
+    "credit_utilization": 15,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $25000, 5.75%
+
+{
+    "credit_score": 690,
+    "annual_income": 75000,
+    "self_reported_debt": 2000,
+    "self_reported_expenses": 2500,
+    "requested_amount": 12000,
+    "age": 37,
+    "province": 3,
+    "employment_status": 1,
+    "months_employed": 48,
+    "total_credit_limit": 20000,
+    "credit_utilization": 35,
+    "num_open_accounts": 6,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $12000, 7.75%
+
+{
+    "credit_score": 650,
+    "annual_income": 55000,
+    "self_reported_debt": 1200,
+    "self_reported_expenses": 1800,
+    "requested_amount": 8000,
+    "age": 29,
+    "province": 4,
+    "employment_status": 1,
+    "months_employed": 15,
+    "total_credit_limit": 12000,
+    "credit_utilization": 20,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $8000, 6.75%
+
+{
+    "credit_score": 740,
+    "annual_income": 100000,
+    "self_reported_debt": 3000,
+    "self_reported_expenses": 4000,
+    "requested_amount": 20000,
+    "age": 45,
+    "province": 1,
+    "employment_status": 1,
+    "months_employed": 60,
+    "total_credit_limit": 45000,
+    "credit_utilization": 30,
+    "num_open_accounts": 4,
+    "num_credit_inquiries": 2,
+    "payment_history": 3
+}
+Actual: Approved, $16500, 7.75%
+
+{
+    "credit_score": 720,
+    "annual_income": 90000,
+    "self_reported_debt": 2500,
+    "self_reported_expenses": 3000,
+    "requested_amount": 15000,
+    "age": 38,
+    "province": 2,
+    "employment_status": 1,
+    "months_employed": 36,
+    "total_credit_limit": 35000,
+    "credit_utilization": 25,
+    "num_open_accounts": 3,
+    "num_credit_inquiries": 1,
+    "payment_history": 0
+}
+Actual: Approved, $8250, 9.75%
+
+{
+    "credit_score": 760,
+    "annual_income": 110000,
+    "self_reported_debt": 1800,
+    "self_reported_expenses": 3200,
+    "requested_amount": 22000,
+    "age": 47,
+    "province": 3,
+    "employment_status": 1,
+    "months_employed": 60,
+    "total_credit_limit": 40000,
+    "credit_utilization": 10,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 0,
+    "payment_history": 3
+}
+Actual: Approved, $22000, 5.75%
+
+{
+    "credit_score": 680,
+    "annual_income": 65000,
+    "self_reported_debt": 4000,
+    "self_reported_expenses": 2000,
+    "requested_amount": 10000,
+    "age": 33,
+    "province": 4,
+    "employment_status": 1,
+    "months_employed": 30,
+    "total_credit_limit": 18000,
+    "credit_utilization": 50,
+    "num_open_accounts": 3,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $10000, 7.75%
+
+{
+    "credit_score": 550,
+    "annual_income": 45000,
+    "self_reported_debt": 3000,
+    "self_reported_expenses": 1500,
+    "requested_amount": 6000,
+    "age": 25,
+    "province": 1,
+    "employment_status": 0,
+    "months_employed": 6,
+    "total_credit_limit": 10000,
+    "credit_utilization": 85,
+    "num_open_accounts": 2,
+    "num_credit_inquiries": 3,
+    "payment_history": 3
+}
+Actual: Denied, $0, 0.0%
+
+{
+    "credit_score": 730,
+    "annual_income": 80000,
+    "self_reported_debt": 2000,
+    "self_reported_expenses": 2500,
+    "requested_amount": 14000,
+    "age": 41,
+    "province": 2,
+    "employment_status": 1,
+    "months_employed": 54,
+    "total_credit_limit": 30000,
+    "credit_utilization": 30,
+    "num_open_accounts": 4,
+    "num_credit_inquiries": 1,
+    "payment_history": 3
+}
+Actual: Approved, $14000, 7.75%
+
+{
+    "credit_score": 600,
+    "annual_income": 50000,
+    "self_reported_debt": 5000,
+    "self_reported_expenses": 2000,
+    "requested_amount": 10000,
+    "age": 30,
+    "province": 3,
+    "employment_status": 1,
+    "months_employed": 12,
+    "total_credit_limit": 15000,
+    "credit_utilization": 40,
+    "num_open_accounts": 3,
+    "num_credit_inquiries": 2,
+    "payment_history": 1
+}
+Actual: Denied, $0, 0.0%
