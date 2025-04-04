@@ -1,0 +1,46 @@
+initialValues={{
+  applicant_id: 100029,
+  credit_score: 710,
+  self_reported_expenses: 3100,        
+  annual_income: 88000,                
+  self_reported_debt: 2700,           
+  employment_status: 1,
+  months_employed: 34,
+  credit_utilization: 27,          
+  num_open_accounts: 3,
+  payment_history: 0,
+  total_credit_limit: 34000,         
+  requested_amount: 16000           
+}}
+
+
+initialValues={{
+  applicant_id: 100025,
+  credit_score: 790,
+  self_reported_expenses: 3600,
+  annual_income: 118000,
+  self_reported_debt: 1400,
+  employment_status: 1,
+  months_employed: 68,
+  credit_utilization: 18,
+  num_open_accounts: 2,
+  payment_history: 3,
+  total_credit_limit: 48000,
+  requested_amount: 23000
+}}
+
+
+initialValues={{
+  applicant_id: 100024,
+  credit_score: 610,
+  self_reported_expenses: 2100,
+  annual_income: 62000,
+  self_reported_debt: 1200,
+  employment_status: 2,
+  months_employed: 30,
+  credit_utilization: 26,
+  num_open_accounts: 3,
+  payment_history: 1,
+  total_credit_limit: 16000,
+  requested_amount: 11000
+}}

@@ -39,6 +39,36 @@ expected_columns = [
     "total_monthly_debt", "DTI"
 ]
 
+@app.route('/api/credit_details/<int:applicant_id>', methods=['GET'])
+def get_credit_details(applicant_id):
+    cursor = mysql.connection.cursor()
+    
+    # Fetch credit details from credit_details table
+    credit_query = """
+        SELECT 
+            applicant_id, credit_score, annual_income, self_reported_debt, self_reported_expenses, 
+            self_reported_expenses, requested_amount, age, province, employment_status, 
+            months_employed, total_credit_limit, credit_utilization, num_open_accounts, 
+            num_credit_inquiries, payment_history 
+        FROM credit_details 
+        WHERE applicant_id = %s 
+        LIMIT 1
+    """
+    cursor.execute(credit_query, (applicant_id,))
+    credit_record = cursor.fetchone()
+    cursor.close()
+
+    if credit_record:
+        columns = ['applicant_id', 'credit_score', 'annual_income', 'self_reported_debt', 'self_reported_expenses', 
+                   'self_reported_expenses', 'requested_amount', 'age', 'province', 'employment_status', 
+                   'months_employed', 'total_credit_limit', 'credit_utilization', 'num_open_accounts', 
+                   'num_credit_inquiries', 'payment_history']
+        credit_details = dict(zip(columns, credit_record))
+        return jsonify(credit_details)
+    else:
+        return jsonify({'error': 'No record found'}), 404
+    
+
 @app.route('/api/application', methods=['PUT'])
 def update_application_status():
     try:
@@ -46,20 +76,104 @@ def update_application_status():
         data = request.get_json()
 
         # Ensure required fields are provided
-        if "application_id" not in data or "status" not in data:
-            return jsonify({"error": "application_id and status are required"}), 400
+        if "application_id" not in data or "applicant_id" not in data or "status" not in data:
+            return jsonify({"error": "application_id, applicant_id and status are required"}), 400
 
         application_id = data["application_id"]
+        applicant_id = data["applicant_id"]
         status = data["status"]
 
-        # Update status in loan_applications table
+        # Get cursor for database operations
         cursor = mysql.connection.cursor()
-        query = """
-            UPDATE loan_applications
-            SET status = %s, updated_at = %s
-            WHERE application_id = %s
-        """
-        cursor.execute(query, (status, datetime.utcnow().isoformat(), application_id))
+
+        if status == 'Approved':
+            # Fetch applicant data to get prediction
+            query = """
+                SELECT 
+                    credit_score, annual_income, self_reported_debt, self_reported_expenses,
+                    requested_amount, age, province, employment_status, months_employed,
+                    total_credit_limit, credit_utilization, num_open_accounts, num_credit_inquiries,
+                    payment_history
+                FROM credit_details
+                WHERE applicant_id = %s
+                ORDER BY id DESC
+                LIMIT 1
+            """
+            cursor.execute(query, (applicant_id,))  # Assuming application_id is same as applicant_id
+            row = cursor.fetchone()
+
+            if not row:
+                cursor.close()
+                return jsonify({"error": "No credit details found for this applicant"}), 404
+
+            # Map data to dictionary
+            data_for_prediction = {
+                "credit_score": int(row[0]),
+                "annual_income": float(row[1]),
+                "self_reported_debt": float(row[2]),
+                "self_reported_expenses": float(row[3]),
+                "requested_amount": float(row[4]),
+                "age": int(row[5]),
+                "province": int(row[6]),
+                "employment_status": int(row[7]),
+                "months_employed": int(row[8]),
+                "total_credit_limit": float(row[9]),
+                "credit_utilization": float(row[10]),
+                "num_open_accounts": int(row[11]),
+                "num_credit_inquiries": int(row[12]),
+                "payment_history": int(row[13])
+            }
+
+            # Get prediction using shared function
+            prediction_response = get_prediction(data_for_prediction)
+            
+            # print(prediction_response)
+            # Extract prediction values
+            if "approval_status" not in prediction_response or prediction_response["approval_status"] != 1:
+                cursor.close()
+                return jsonify({"error": "Prediction indicates loan should not be approved"}), 400
+
+            approved_amount = prediction_response.get("approved_amount", 0.0)
+            interest_rate = prediction_response.get("interest_rate", 0.0)
+            dti = prediction_response.get("DTI", 0.0)
+            current_datetime = datetime.utcnow().isoformat()
+
+            # Update loan_applications table with status, prediction data, and approved_at
+            update_query = """
+                UPDATE loan_applications
+                SET status = %s, approved_at = %s, approved_amount = %s, interest_rate = %s, DTI = %s, updated_at = %s, admin_notes = %s
+                WHERE application_id = %s
+            """
+            cursor.execute(update_query, (
+                status, 
+                current_datetime, 
+                approved_amount, 
+                interest_rate, 
+                dti, 
+                current_datetime, 
+                "Your application has been Approved by Representative!",
+                application_id
+            ))
+
+        elif status == 'Rejected':
+            # For non-'Approved' status, only update status and updated_at
+            update_query = """
+                UPDATE loan_applications
+                SET status = %s, updated_at = %s, rejected_reason = %s
+                WHERE application_id = %s
+            """
+            cursor.execute(update_query, (status, datetime.utcnow().isoformat(), "Your application has been Rejected by Representative!", application_id))
+            
+        else:
+            # For non-'Approved' status, only update status and updated_at
+            update_query = """
+                UPDATE loan_applications
+                SET status = %s, updated_at = %s
+                WHERE application_id = %s
+            """
+            cursor.execute(update_query, (status, datetime.utcnow().isoformat(), application_id))
+
+        # Commit the transaction
         mysql.connection.commit()
         cursor.close()
 
@@ -181,45 +295,7 @@ def get_application(applicant_id):
     except Exception as e:
         return jsonify({"found": 0, "error": str(e)}), 500
     
-# @app.route('/api/application/<applicant_id>', methods=['GET'])
-# def get_application(applicant_id):
-#     try:
-#         cursor = mysql.connection.cursor()
-#         query = """
-#             SELECT 
-#                 application_id, applicant_id, approved_amount, approved, interest_rate,
-#                 dti, status, created_at, updated_at, approved_at, rejected_reason, admin_notes
-#             FROM loan_applications
-#             WHERE applicant_id = %s
-#             LIMIT 1
-#         """
-#         cursor.execute(query, (applicant_id,))
-#         record = cursor.fetchone()
-#         cursor.close()
-
-#         if not record:
-#             return jsonify({"found": 0}), 200
-
-#         response = {
-#             "found": 1,
-#             "application_id": record[0],
-#             "applicant_id": record[1],
-#             "approved_amount": float(record[2]) if record[2] else None,
-#             "approved": record[3],
-#             "interest_rate": float(record[4]) if record[4] else None,
-#             "dti": float(record[5]) if record[5] else None,
-#             "status": record[6],
-#             "created_at": record[7].isoformat(),
-#             "updated_at": record[8].isoformat(),
-#             "approved_at": record[9].isoformat() if record[9] else None,
-#             "rejected_reason": record[10],
-#             "admin_notes": record[11]
-#         }
-#         return jsonify(response), 200
-
-#     except Exception as e:
-#         return jsonify({"found": 0, "error": str(e)}), 500
-    
+ 
 @app.route('/api/calculate-loan', methods=['POST'])
 def calculate_loan():
     data = request.get_json()
@@ -243,129 +319,6 @@ def calculate_loan():
         "totalPayment": round(total_payment, 2)
     })
     
-# @app.route('/predict', methods=['POST'])
-# def predict():
-#     try:
-#         # Get JSON data from frontend
-#         data = request.get_json()
-
-#         # Ensure applicant_id is provided
-#         if "applicant_id" not in data:
-#             return jsonify({"error": "applicant_id is required"}), 400
-
-#         applicant_id = data["applicant_id"]
-        
-#         # Define field types for conversion
-#         field_types = {
-#             "credit_score": int,
-#             "annual_income": float,
-#             "self_reported_debt": float,
-#             "self_reported_expenses": float,
-#             "requested_amount": float,
-#             "age": int,
-#             "province": int,
-#             "employment_status": int,
-#             "months_employed": int,
-#             "total_credit_limit": float,
-#             "credit_utilization": float,
-#             "num_open_accounts": int,
-#             "num_credit_inquiries": int,
-#             "payment_history": int
-#         }
-        
-#         if applicant_id == 9999:
-            
-#             # Convert incoming data to numeric types
-#             incoming_data = {}
-#             for field, field_type in field_types.items():
-#                 if field in data:
-#                     try:
-#                         incoming_data[field] = field_type(data[field])
-#                     except (ValueError, TypeError):
-#                         return jsonify({"error": f"Invalid value for {field}: must be numeric"}), 400
-                    
-#         else:
-#             # Fetch record from credit_details table
-#             cursor = mysql.connection.cursor()
-#             query = """
-#                 SELECT 
-#                     credit_score, annual_income, self_reported_debt, self_reported_expenses,
-#                     requested_amount, age, province, employment_status, months_employed,
-#                     total_credit_limit, credit_utilization, num_open_accounts, num_credit_inquiries,
-#                     payment_history
-#                 FROM credit_details
-#                 WHERE applicant_id = %s
-#                 ORDER BY id DESC
-#                 LIMIT 1
-#             """
-#             cursor.execute(query, (applicant_id,))
-#             saved_record = cursor.fetchone()
-#             cursor.close()
-
-#             if not saved_record:
-#                 return jsonify({"error": f"No record found for applicant_id {applicant_id}"}), 404
-
-#             # Map saved record to dictionary
-#             saved_data = {
-#                 "credit_score": saved_record[0],
-#                 "annual_income": float(saved_record[1]),
-#                 "self_reported_debt": float(saved_record[2]),
-#                 "self_reported_expenses": float(saved_record[3]),
-#                 "requested_amount": float(saved_record[4]),
-#                 "age": saved_record[5],
-#                 "province": saved_record[6],
-#                 "employment_status": saved_record[7],
-#                 "months_employed": saved_record[8],
-#                 "total_credit_limit": float(saved_record[9]),
-#                 "credit_utilization": float(saved_record[10]),
-#                 "num_open_accounts": saved_record[11],
-#                 "num_credit_inquiries": saved_record[12],
-#                 "payment_history": saved_record[13]
-#             }
-
-#             # Convert incoming data to numeric types
-#             incoming_data = {}
-#             for field, field_type in field_types.items():
-#                 if field in data:
-#                     try:
-#                         incoming_data[field] = field_type(data[field])
-#                     except (ValueError, TypeError):
-#                         return jsonify({"error": f"Invalid value for {field}: must be numeric"}), 400
-
-#             # Compare incoming data with saved record
-#             mismatched_fields = []
-#             for field in incoming_data:
-#                 if field in saved_data and incoming_data[field] != saved_data[field]:
-#                     mismatched_fields.append({
-#                         "field": field,
-#                         "provided_value": incoming_data[field],
-#                         "saved_value": saved_data[field]
-#                     })
-
-#             if mismatched_fields:
-#                 return jsonify({
-#                     "approval_status" : 0,
-#                     "mismatch": 1,
-#                     "msg": (
-#                         "The provided information does not match our records. "
-#                         "Please ensure the details are correct or contact your branch representative for manual approval."
-#                     ),
-#                     "mismatchFields": [
-#                         {
-#                             "field": m["field"],
-#                             "provided": m["provided_value"],
-#                             "expected": m["saved_value"]
-#                         } for m in mismatched_fields
-#                     ]
-#                 }), 200
-
-#         # If all matches, proceed with prediction
-#         response = get_prediction(incoming_data)
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
-    
 @app.route('/predict', methods=['POST'])
 def predict():
     try:
@@ -373,27 +326,28 @@ def predict():
         data = request.get_json()
 
         # Ensure applicant_id is provided
-        if "applicant_id" not in data:
-            return jsonify({"error": "applicant_id is required"}), 400
+        # if "applicant_id" not in data:
+        #     return jsonify({"error": "applicant_id is required"}), 400
 
-        applicant_id = data["applicant_id"]
-        requested_amount = data["requested_amount"]
-        
-        # Check if an application already exists in loan_applications table
-        cursor = mysql.connection.cursor()
-        check_query = """
-            SELECT application_id 
-            FROM loan_applications 
-            WHERE applicant_id = %s 
-            LIMIT 1
-        """
-        cursor.execute(check_query, (applicant_id,))
-        existing_application = cursor.fetchone()
-        cursor.close()
+        if "applicant_id" in data:
+            applicant_id = data["applicant_id"]
+            requested_amount = data["requested_amount"]
+            
+            # Check if an application already exists in loan_applications table
+            cursor = mysql.connection.cursor()
+            check_query = """
+                SELECT application_id 
+                FROM loan_applications 
+                WHERE applicant_id = %s 
+                LIMIT 1
+            """
+            cursor.execute(check_query, (applicant_id,))
+            existing_application = cursor.fetchone()
+            cursor.close()
 
-        # If a record is found, return {"found": 1}
-        if existing_application:
-            return jsonify({"found": 1}), 200
+            # If a record is found, return {"found": 1}
+            if existing_application:
+                return jsonify({"found": 1}), 200
 
         # If no existing application, proceed with the current predict flow
         # Define field types for conversion
@@ -414,11 +368,11 @@ def predict():
             "payment_history": int
         }
         
-        if applicant_id == 999999:
+        if "applicant_id" not in data or data["applicant_id"] is None or data["applicant_id"] == 999999:
             # Convert incoming data to numeric types
             incoming_data = {}
             for field, field_type in field_types.items():
-                if field in data:
+                if field in data:   
                     try:
                         incoming_data[field] = field_type(data[field])
                     except (ValueError, TypeError):
@@ -506,7 +460,6 @@ def predict():
     except Exception as e:
         return jsonify({"error": f"Prediction failed: {str(e)}"}), 500
     
-
 @app.route('/predict/<int:applicant_id>', methods=['GET'])
 def predict_by_id(applicant_id):
     try:
@@ -554,7 +507,6 @@ def predict_by_id(applicant_id):
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
     
 @app.route('/generatePDF', methods=['POST'])
 def generate_pdf():
@@ -623,7 +575,6 @@ def get_all_applications():
 
     except Exception as e:
         return jsonify({"error": f"Failed to fetch applications: {str(e)}"}), 500
-    
     
 @app.route('/admin/users', methods=['GET'])
 def get_admin_users():
@@ -696,88 +647,6 @@ def delete_application(application_id):
         return jsonify({"message": "Application deleted successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-    
-# @app.route('/predict/<int:applicant_id>', methods=['GET'])
-# def predict_by_id(applicant_id):
-#     try:
-#         # Fetch the latest credit details for the applicant_id
-#         cursor = mysql.connection.cursor()
-#         query = """
-#             SELECT 
-#                 credit_score, annual_income, self_reported_debt, self_reported_expenses,
-#                 requested_amount, age, province, employment_status, months_employed,
-#                 total_credit_limit, credit_utilization, num_open_accounts, num_credit_inquiries,
-#                 payment_history
-#             FROM credit_details
-#             WHERE applicant_id = %s
-#             ORDER BY id DESC
-#             LIMIT 1
-#         """
-#         cursor.execute(query, (applicant_id,))
-#         row = cursor.fetchone()
-#         cursor.close()
-
-#         if not row:
-#             return jsonify({"error": "No credit details found for this applicant"}), 404
-
-#         # Map data to dictionary
-#         data = {
-#             "credit_score": row[0],
-#             "annual_income": float(row[1]),
-#             "self_reported_debt": float(row[2]),
-#             "self_reported_expenses": float(row[3]),
-#             "requested_amount": float(row[4]),
-#             "age": row[5],
-#             "province": row[6],
-#             "employment_status": row[7],
-#             "months_employed": row[8],
-#             "total_credit_limit": float(row[9]),
-#             "credit_utilization": float(row[10]),
-#             "num_open_accounts": row[11],
-#             "num_credit_inquiries": row[12],
-#             "payment_history": row[13]
-#         }
-
-#         # Calculate derived fields
-#         data["estimated_debt"] = data["total_credit_limit"] * (data["credit_utilization"] / 100) * 0.03
-#         data["total_monthly_debt"] = data["self_reported_debt"] + data["estimated_debt"]
-#         data["DTI"] = ((data["self_reported_debt"] + data["estimated_debt"] + (data["requested_amount"] * 0.03)) / 
-#                    (data["annual_income"] / 12)) * 100
-
-#         # Prepare DataFrame for prediction
-#         df = pd.DataFrame([data])[expected_columns]
-#         approval_data_imputed = pd.DataFrame(approval_imputer_X.transform(df), columns=df.columns)
-#         approval_data_scaled = approval_scaler.transform(approval_data_imputed)
-#         approval_pred = approval_model.predict(approval_data_scaled)[0]
-#         approval_prob = approval_model.predict_proba(approval_data_scaled)[0][1]
-
-#         # Prepare response
-#         if approval_pred == 1:
-#             terms_data_imputed = pd.DataFrame(terms_imputer_X.transform(df), columns=df.columns)
-#             terms_data_scaled = terms_scaler.transform(terms_data_imputed)
-#             terms_pred = terms_model.predict(terms_data_scaled)[0]
-#             response = {
-#                 "approval_status": int(approval_pred),
-#                 "approval_probability": float(approval_prob),
-#                 "approved_amount": float(terms_pred[0]),
-#                 "interest_rate": float(terms_pred[1]),
-#                 "DTI": float(data["DTI"])
-#             }
-#         else:
-#             from app.extras.denial_reasons import get_denial_reasons, DENIAL_MESSAGES
-#             denial_reason_keys = get_denial_reasons(data)
-#             denial_reasons = [DENIAL_MESSAGES.get(key, DENIAL_MESSAGES["default"]) for key in denial_reason_keys] if denial_reason_keys else [DENIAL_MESSAGES["default"]]
-#             response = {
-#                 "approval_status": int(approval_pred),
-#                 "approval_probability": float(approval_prob),
-#                 "DTI": float(data["DTI"]),
-#                 "denial_reasons": denial_reasons
-#             }
-
-#         return jsonify(response)
-
-#     except Exception as e:
-#         return jsonify({"error": str(e)}), 500
     
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
